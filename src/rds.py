@@ -1,4 +1,5 @@
 from datetime import datetime
+from operator import itemgetter
 
 import boto3
 import logging
@@ -7,30 +8,71 @@ import utils
 LOGGER = logging.getLogger("root")
 
 
-def init_client(assumed_creds):
-    if assumed_creds is None:
+RDS_CLUSTER_PARAMS = {
+    "AvailabilityZones": None,
+    "DBClusterIdentifier": None,
+    "SnapshotIdentifier": None,
+    "Port": None,
+    "DBSubnetGroupName": None,
+    "DatabaseName": None,
+    "OptionGroupName": None,
+    "VpcSecurityGroupIds": None,
+    "Tags": None,
+    "KmsKeyId": None,
+    "EnableIAMDatabaseAuthentication": None,
+    "DBClusterParameterGroupName": None,
+    "DeletionProtection": None,
+    "CopyTagsToSnapshot": None,
+    "DBClusterInstanceClass": None,
+    "PubliclyAccessible": None,
+}
+
+RDS_INSTANCE_PARAMS = {
+    "AvailabilityZones": None,
+    "DBInstanceIdentifier": None,
+    "DBSnapshotIdentifier": None,
+    "Port": None,
+    "DBSubnetGroupName": None,
+    "DatabaseName": None,
+    "OptionGroupName": None,
+    "VpcSecurityGroupIds": None,
+    "Tags": None,
+    "KmsKeyId": None,
+    "EnableIAMDatabaseAuthentication": None,
+    "DBParameterGroupName": None,
+    "DeletionProtection": None,
+    "CopyTagsToSnapshot": None,
+    "DBInstanceClass": None,
+    "PubliclyAccessible": None,
+}
+
+RDS_CREDS = {"MasterUserPassword": None}
+
+
+def init_client(assumed_role):
+    if assumed_role is None:
         client = boto3.client("rds")
     else:
         client = boto3.client(
             "rds",
-            aws_access_key_id=assumed_creds["AccessKeyId"],
-            aws_secret_access_key=assumed_creds["SecretAccessKey"],
-            aws_session_token=assumed_creds["SessionToken"],
+            aws_access_key_id=assumed_role["AccessKeyId"],
+            aws_secret_access_key=assumed_role["SecretAccessKey"],
+            aws_session_token=assumed_role["SessionToken"],
         )
     return client
 
 
-def target_exists(assumed_creds, target, cluster_mode):
+def does_target_exists(assumed_role, db_identifier, cluster_mode):
     client = init_client(None)
     if cluster_mode:
-        response = rds.describe_db_clusters(
+        response = client.describe_db_clusters(
             Filters=[{"Name": "db-cluster-id", "Values": [db_identifier]}]
         )
         if len(response["DBClusters"]) == 0:
             return False
 
     else:
-        response = rds.describe_db_instances(
+        response = client.describe_db_instances(
             Filters=[{"Name": "db-instance-id", "Values": [db_identifier]}]
         )
         if len(response["DBInstances"]) == 0:
@@ -66,55 +108,8 @@ def get_latest_snapshot(client, db_identifier, cluster_mode):
     return snapshot_arn
 
 
-def get_config(assumed_creds, db_identifier, cluster_mode):
-    LOGGER.info("Fetching DB config")
-    client = init_client(None)
-    security_groups = []
-    config = {}
-
-    if cluster_mode:
-        response = rds.describe_db_clusters(
-            Filters=[{"Name": "db-cluster-id", "Values": [db_identifier]}]
-        )
-        if len(response["DBClusters"]) > 0:
-            db_cluster = response["DBClusters"][0]
-            config["availability_zone"] = db_cluster["AvailabilityZone"]
-            config["subnet_group"] = db_cluster["DBSubnetGroup"]
-            config["tags"] = db_cluster["TagList"]
-            vpc_sgs = db_cluster["VpcSecurityGroups"]
-            for sg in vpc_sgs:
-                security_groups.append(sg["VpcSecurityGroupId"])
-    else:
-        response = rds.describe_db_instances(
-            Filters=[{"Name": "db-instance-id", "Values": [db_identifier]}]
-        )
-        if len(response["DBInstances"]) > 0:
-            db_instance = response["DBInstances"][0]
-            config["subnet_group"] = db_instance["DBSubnetGroup"]["DBSubnetGroupName"]
-            config["tags"] = db_instance["TagList"]
-            config["availability_zone"] = db_instance["AvailabilityZone"]
-            vpc_sgs = db_instance["VpcSecurityGroups"]
-            for sg in vpc_sgs:
-                security_groups.append(sg["VpcSecurityGroupId"])
-    logger.info("Security groups: %s" % security_groups)
-    logger.info("Availability zone: %s" % availability_zone)
-    logger.info("Subnet group: %s" % subnet_group)
-    logger.info("Tags: %s" % tags)
-    if (
-        len(security_groups) == 0
-        or len(tags) == 0
-        or availability_zone is None
-        or subnet_group is None
-    ):
-        LOGGER.error("Failed to get source DB config")
-        exit(1)
-
-    config["security_groups"] = security_groups
-    return config
-
-
 def delete_rds(client, db_identifier, cluster_mode):
-    logger.info("Deleting %s db" % db_identifier)
+    LOGGER.info("Deleting %s db" % db_identifier)
     if cluster_mode:
         client.delete_db_cluster(
             DBClusterIdentifier=db_identifier, SkipFinalSnapshot=True
@@ -153,7 +148,7 @@ def load_latest_snapshot(
     if target_exists:
         db_identifier = target + "-" + now.strftime("%d%M%S")
 
-    logger.info("Restoring %s snapshot to %s db" % (snapshot_arn, latest_db_identifier))
+    LOGGER.info("Restoring %s snapshot to %s db" % (snapshot_arn, latest_db_identifier))
     if cluster_mode:
         response = client.restore_db_cluster_from_snapshot(
             DBClusterIdentifier=db_identifier,
@@ -198,10 +193,14 @@ def load_latest_snapshot(
     return latest_db_identifier
 
 
-def share_snashot(assumed_creds, source, target, kms_key, account, cluster_mode):
-    client = init_client(assumed_creds)
-    source_snapshot_arn = get_latest_snapshot(client, source)
+def share_snapshot(assumed_role, source, target, kms_key, account, cluster_mode):
+    client = init_client(assumed_role)
+    source_snapshot_arn = get_latest_snapshot(client, source, cluster_mode)
+    LOGGER.info("Sharing snapshot %s" % source_snapshot_arn)
+    now = datetime.now()
     target = target + "-" + now.strftime("%d%M%S")
+    print(source_snapshot_arn)
+    print(source, target, kms_key, account, cluster_mode)
 
     if cluster_mode:
         response = client.copy_db_cluster_snapshot(
@@ -235,12 +234,9 @@ def share_snashot(assumed_creds, source, target, kms_key, account, cluster_mode)
     return target
 
 
-def restore_snashot(
-    assumed_creds, source, target, db_config, target_exists, cluster_mode
-):
-    client = init_client(None)
-    utils.validate_db_config(db_config)
-    snapshot_arn = get_latest_snapshot(client, source)
+def restore_snapshot(data, target_exists, cluster_mode):
+    client = init_client(data["AssumeTargetRole"])
+    snapshot_arn = get_latest_snapshot(client, source, cluster_mode)
     latest_db_identifier = load_latest_snapshot(
         client, snapshot_arn, target, target_exists, db_config, cluster_mode
     )

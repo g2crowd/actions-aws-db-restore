@@ -1,0 +1,29 @@
+{
+  "ClusterMode":true,
+  "Source":{
+    "Share":{
+      "AssumeRole":"arn:aws:iam::554109440652:role/db_restore_share_role",
+      "TargetAccount":"683046045338",
+      "KmsKey":"db_restore"
+    },
+    "DBIdentifier":"production-ue-ue-aggregates"
+  },
+  "Target":{
+    "AssumeRole":"arn:aws:iam::683046045338:role/db_restore_role",
+    "MasterUserPassword":"${ssm:/infra/terraform/dev/chubbywombat_db_password}",
+    "DeleteExistingTarget":false,
+    "DBIdentifier":"staging-ue-chubbywombat-aggregates",
+    "DBParameterGroupName":"string",
+    "VpcSecurityGroupIds":"${tf:private_subnets}",
+    "DBSubnetGroupName":"string",
+    "CopyTagsToSnapshot":true,
+    "DBInstanceClass":"string",
+    "PubliclyAccessible":false,
+    "Tags":[
+      {
+        "Key":"string",
+        "Value":"string"
+      }
+    ]
+  }
+}

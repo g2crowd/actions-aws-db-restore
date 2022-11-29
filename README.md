@@ -19,34 +19,12 @@ This is a GitHub action to restore RDS DB snapshot.
     - name: Restore DB snapshot from another account
       uses: g2crowd/aaction-aws-db-restore@main
       with:
-        source: my-source
-        target: my-target
-        delete: true
-        cluster: true
-        sg: [sg-11, sg-12]
-        az: [us-east-1a]
-        subnet: my-db-subnet-group
-        tags: Name:db-restore,Team:infra
-        share: true
-        assume: my-iam-role-arn
-        key: my-kms-key
-        account: 123456789
+        config: my-config
 ```
 
 ## Inputs
 
-* source (**Required**): The identifier for the source DB snapshot
-* target (**Required**): The identifier for the target DB
-* delete (**Required**): Whether to delete target DB if exists
-* cluster (**Required**): Whether its a DB cluster or not
-* sg (_Required if target DB doesn't exists_): A list of Amazon EC2 VPC security groups to associate with this DB
-* az (_Required if target DB doesn't exists_): The Availability Zone where the database will be created
-* subnet (_Required if target DB doesn't exists_): A DB subnet group to associate with this DB
-* tags (_Required if target DB doesn't exists_): Tags to assign to the DB
-* share (_Required if target DB doesn't exists_): Whether to share an DB snapshot with another account
-* assume (_Required if share is enabled_): IAM role to be assumed for sharing DB
-* key (_Required if share is enabled_): The Amazon Web Services KMS key identifier for an encrypted DB snapshot
-* account (_Required if share is enabled_): Id of the target AWS account
+* config (**Required**): The configuration file path
 
 ## Permissions
 
