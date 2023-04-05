@@ -1,6 +1,8 @@
-import boto3
-import logging
 import json
+import logging
+
+import boto3
+from botocore.exceptions import ClientError
 
 LOGGER = logging.getLogger("root")
 
@@ -28,7 +30,17 @@ def parse_outputs(data):
 def get_outputs(assumed_role, state_file):
     client = init_client(assumed_role)
     state_file = state_file.split("/", 1)
-    object = client.Object(state_file[0], state_file[1])
-    content = object.get()["Body"].read().decode("utf-8")
-    data = json.loads(content)
+
+    try:
+        object = client.Object(state_file[0], state_file[1])
+        content = object.get()["Body"].read().decode("utf-8")
+        data = json.loads(content)
+    except ClientError as err:
+        LOGGER.error(
+            "{}: {}".format(
+                err.response["Error"]["Code"], err.response["Error"]["Message"]
+            )
+        )
+        return None
+
     return parse_outputs(data["outputs"])

@@ -1,0 +1,48 @@
+{
+    "type": "object",
+    "required": ["ClusterMode", "DeleteExistingTarget", "Source", "Target"],
+    "properties": {
+        "ClusterMode": { "type": "boolean" },
+        "DeleteExistingTarget": { "type": "boolean" },
+        "Source": {
+            "type": "object",
+            "required": ["DBIdentifier"],
+            "properties": {
+                "Share": {
+                    "type": "object",
+                    "required": [],
+                    "properties": {
+                        "AssumeRole": { "type": "string" },
+                        "TargetAccount": { "type": "string" },
+                        "SourceKmsKey": { "type": "string" },
+                        "TargetKmsKey": { "type": "string" }
+                    }
+                },
+                "DBIdentifier": { "type": "string" }
+            }
+        },
+        "Target": {
+            "type": "object",
+            "required": ["DBIdentifier", "VpcSecurityGroupIds", "DBSubnetGroupName", "DBInstanceClass", "PubliclyAccessible", "Tags"],
+            "properties": {
+                "AssumeRole": { "type": "string" },
+                "DBIdentifier": { "type": "string" },
+                "VpcSecurityGroupIds": { "type": "string" },
+                "DBSubnetGroupName": { "type": "string" },
+                "DBInstanceClass": { "type": "string" },
+                "PubliclyAccessible": { "type": "boolean" },
+                "Tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["Key", "Value"],
+                        "properties": {
+                            "Key": { "type": "string" },
+                            "Value": { "type": "string" }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

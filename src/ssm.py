@@ -1,6 +1,7 @@
-import boto3
 import logging
 
+import boto3
+from botocore.exceptions import ClientError
 
 LOGGER = logging.getLogger("root")
 
@@ -16,6 +17,14 @@ def get_parameter(assumed_role, name):
             aws_session_token=assumed_role["SessionToken"],
         )
 
-    result = client.get_parameter(Name=name, WithDecryption=True)
+    try:
+        result = client.get_parameter(Name=name, WithDecryption=True)
+    except ClientError as err:
+        LOGGER.error(
+            "{}: {}".format(
+                err.response["Error"]["Code"], err.response["Error"]["Message"]
+            )
+        )
+        return None
 
     return result["Parameter"]["Value"]

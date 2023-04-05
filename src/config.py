@@ -1,53 +1,30 @@
 import json
 import logging
 import os.path
+import re
+import secrets
+import string
 
-import boto3
-import ssm
-import utils
+import jsonschema
+from src.ssm import get_parameter
 
 LOGGER = logging.getLogger("root")
 
 
-def load_source(data):
-    utils.validate_key(data, "Source", "Source")
-    utils.validate_key(data["Source"], "DBIdentifier", "DBIdentifier")
-    if data["Source"].get("Share") is None:
-        data["Source"]["ShareEnabled"] = False
-    else:
-        utils.validate_key(data["Source"]["Share"], "TargetAccount", "TargetAccount")
-        utils.validate_key(data["Source"]["Share"], "KmsKey", "KmsKey")
-        if data["Source"]["Share"].get("AssumeRole") is None:
-            data["AssumeSourceRole"] = None
-        else:
-            data["AssumeSourceRole"] = utils.assume_aws_role(
-                data["Source"]["Share"]["AssumeRole"]
-            )
-    return data
+def generate_password():
+    alphabet = string.ascii_letters + string.digits
+    password = "".join(secrets.choice(alphabet) for i in range(20))
+    return password
 
 
-def load_target(data):
-    utils.validate_key(data, "Target", "Target")
-    utils.validate_key(data["Target"], "DBIdentifier", "DBIdentifier")
-
-    if data["Target"].get("AssumeRole") is None:
-        data["AssumeTargetRole"] = None
-    else:
-        data["AssumeTargetRole"] = utils.assume_aws_role(data["Target"]["AssumeRole"])
-
-    utils.validate_key(data["Target"], "DBSubnetGroupName", "DBSubnetGroupName")
-    utils.validate_key(data["Target"], "VpcSecurityGroupIds", "VpcSecurityGroupIds")
-    utils.validate_key(data["Target"], "Tags", "Tags")
-    utils.validate_key(data["Target"], "DBInstanceClass", "DBInstanceClass")
-
-    if data["Target"].get("CopyTagsToSnapshot") is None:
-        data["Target"]["CopyTagsToSnapshot"] = True
-    if data["Target"].get("PubliclyAccessible") is None:
-        data["Target"]["PubliclyAccessible"] = False
-    if data["Target"].get("DeleteExistingTarget") is None:
-        data["Target"]["DeleteExistingTarget"] = False
-
-    return data
+def is_valid(data):
+    schema = load_config("schema/config.json")
+    try:
+        jsonschema.validate(data, schema)
+    except jsonschema.exceptions.ValidationError as err:
+        print(err)
+        return False
+    return True
 
 
 def load_config(filename):
@@ -58,11 +35,6 @@ def load_config(filename):
     with open(filename) as file:
         data = json.load(file)
 
-    if data.get("ClusterMode") is None:
-        data["ClusterMode"] = True
-
-    data = load_source(data)
-    data = load_target(data)
     return data
 
 
@@ -71,6 +43,45 @@ def is_config_exists(filename):
 
 
 def is_sharing_enabled(data):
-    if data["Source"].get("Share") is None:
+    if data.get("Share") is None:
         return False
-    return data["Source"]["Share"]
+    return data["Share"]
+
+
+def fetch_from_tfstate(result, tf_outputs):
+    if tf_outputs.get(result.group(2)) is None:
+        LOGGER.error("%s does not exists in TF state" % result.group(2))
+
+    return tf_outputs[result.group(2)]
+
+
+def fetch_from_env(result):
+    if os.environ.get(result.group(2)) is None:
+        LOGGER.error("%s environment variable does not exists" % result.group(2))
+    return os.environ[result.group(2)]
+
+
+def fetch_from_ssm(result, assume_role):
+    return get_parameter(assume_role, result.group(2))
+
+
+def replace_placeholder(value, tf_outputs, assume_role):
+    if type(value) == str:
+        pattern = re.compile(r"\${(.+):(.+)}")
+        result = pattern.search(value)
+        if result is None:
+            return value
+        elif result.group(1) == "tf":
+            value = fetch_from_tfstate(result, tf_outputs)
+        elif result.group(1) == "ssm":
+            value = fetch_from_ssm(result, assume_role)
+        elif result.group(1) == "env":
+            value = fetch_from_env(result)
+        return value
+    elif type(value) == list:
+        return [replace_placeholder(i, tf_outputs, assume_role) for i in value]
+    elif type(value) == dict:
+        return {
+            k: replace_placeholder(i, tf_outputs, assume_role) for k, i in value.items()
+        }
+    return value

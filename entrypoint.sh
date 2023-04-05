@@ -1,13 +1,11 @@
 #!/bin/sh -l
 
-RESULT="false"
-
-python /src/main.py --source "$1" --target "$2" --delete "$3" --cluster "$4" --sg "$5" \
-  --az "$6" --subnet "$7" --tags "$8" --share "$9" --assume "${10}" --key "${11}" --account "${12}"
+python /src/main.py -c "$1" --t "$2"
 BUILD_RESULT=$?
 if [ $BUILD_RESULT -eq 0 ]; then
-  RESULT="true"
+  echo ::set-output name=success::true
+  exit 0
+else
+  echo ::set-output name=success::false
+  exit 1
 fi
-
-echo $RESULT
-echo ::set-output name=success::$RESULT
