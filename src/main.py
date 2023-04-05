@@ -6,7 +6,7 @@ from src.rds import (
     does_target_exists,
     init_client,
     restore_snapshot,
-    share_snapshot
+    share_snapshot,
 )
 from src.tf import get_outputs
 from src.utils import assume_aws_role, setup_custom_logger
