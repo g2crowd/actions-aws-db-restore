@@ -2,7 +2,7 @@
 
 This is a GitHub action to restore RDS DB snapshot.
 
-[![GitHub Super-Linter](https://github.com/g2crowd/action-aws-db-restore/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
+[![GitHub Super-Linter](https://github.com/g2crowd/action-aws-db-restore/workflows/test.yml/badge.svg)](https://github.com/marketplace/actions/super-linter)
 
 ## Table of Contents
 

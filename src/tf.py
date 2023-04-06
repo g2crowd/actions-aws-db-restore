@@ -28,6 +28,9 @@ def parse_outputs(data):
 
 
 def get_outputs(assumed_role, state_file):
+    if state_file is None:
+        return None
+
     client = init_client(assumed_role)
     state_file = state_file.split("/", 1)
 

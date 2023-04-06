@@ -6,7 +6,7 @@ from botocore.exceptions import ClientError
 LOGGER = logging.getLogger("root")
 
 
-def get_parameter(assumed_role, name):
+def init_client(assumed_role):
     if assumed_role is None:
         client = boto3.client("ssm")
     else:
@@ -16,7 +16,11 @@ def get_parameter(assumed_role, name):
             aws_secret_access_key=assumed_role["SecretAccessKey"],
             aws_session_token=assumed_role["SessionToken"],
         )
+    return client
 
+
+def get_parameter(assumed_role, name):
+    client = init_client(assumed_role)
     try:
         result = client.get_parameter(Name=name, WithDecryption=True)
     except ClientError as err:

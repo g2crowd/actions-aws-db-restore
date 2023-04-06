@@ -17,24 +17,11 @@ def setup_custom_logger(name):
     return logger
 
 
-def assume_aws_role(role):
+def assume_aws_role(role_arn, role_name):
+    if role_arn is None:
+        return None
+
+    LOGGER.info(f"Assuming {role_name} AWS role")
     client = boto3.client("sts")
-    response = client.assume_role(RoleArn=role, RoleSessionName="RestoreDBSession")
+    response = client.assume_role(RoleArn=role_arn, RoleSessionName="RestoreDBSession")
     return response["Credentials"]
-
-
-def get_tags(input):
-    tags = []
-    input = input.strip().split(",")
-
-    for item in input:
-        tag = {}
-        item = item.split(":")
-        if len(item) != 2:
-            LOGGER.error("Invalid tags")
-            exit(1)
-
-        tag["Key"] = item[0]
-        tag["Value"] = item[1]
-        tags.append(tag)
-    return tags

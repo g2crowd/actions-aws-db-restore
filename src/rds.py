@@ -8,47 +8,6 @@ from botocore.exceptions import ClientError
 LOGGER = logging.getLogger("root")
 
 
-RDS_CLUSTER_PARAMS = {
-    "AvailabilityZones": None,
-    "DBClusterIdentifier": None,
-    "SnapshotIdentifier": None,
-    "Port": None,
-    "DBSubnetGroupName": None,
-    "DatabaseName": None,
-    "OptionGroupName": None,
-    "VpcSecurityGroupIds": None,
-    "Tags": None,
-    "KmsKeyId": None,
-    "EnableIAMDatabaseAuthentication": None,
-    "DBClusterParameterGroupName": None,
-    "DeletionProtection": None,
-    "CopyTagsToSnapshot": None,
-    "DBClusterInstanceClass": None,
-    "PubliclyAccessible": None,
-}
-
-RDS_INSTANCE_PARAMS = {
-    "AvailabilityZones": None,
-    "DBInstanceIdentifier": None,
-    "DBSnapshotIdentifier": None,
-    "Port": None,
-    "DBSubnetGroupName": None,
-    "DatabaseName": None,
-    "OptionGroupName": None,
-    "VpcSecurityGroupIds": None,
-    "Tags": None,
-    "KmsKeyId": None,
-    "EnableIAMDatabaseAuthentication": None,
-    "DBParameterGroupName": None,
-    "DeletionProtection": None,
-    "CopyTagsToSnapshot": None,
-    "DBInstanceClass": None,
-    "PubliclyAccessible": None,
-}
-
-RDS_CREDS = {"MasterUserPassword": None}
-
-
 def init_client(assumed_role):
     if assumed_role is None:
         client = boto3.client("rds")

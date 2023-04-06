@@ -1,6 +1,6 @@
 import argparse
 
-from src.config import is_sharing_enabled, is_valid, load_config, replace_placeholder
+from src.config import is_invalid, is_sharing_enabled, load_config, replace_placeholder
 from src.rds import (
     copy_snapshot,
     does_target_exists,
@@ -21,33 +21,25 @@ def main(command_line=None):
     args = parser.parse_args(command_line)
 
     data = load_config(args.config)
-    status = is_valid(data)
-    if not status:
+    status = is_invalid(data)
+    if status:
+        LOGGER.error(status)
         exit(1)
-
-    target_credentials = None
-    if data["Target"].get("AssumeRole") is not None:
-        LOGGER.info("Assuming target AWS role")
-        target_credentials = assume_aws_role(data["Target"]["AssumeRole"])
-    source_share_credentials = None
-    if data["Source"]["Share"].get("AssumeRole") is not None:
-        LOGGER.info("Assuming source AWS role")
-        source_share_credentials = assume_aws_role(
-            data["Source"]["Share"]["AssumeRole"]
-        )
-
-    tf_outputs = {}
-    if args.tfstate is not None:
-        tf_outputs = get_outputs(target_credentials, args.tfstate)
-        if tf_outputs is None:
-            LOGGER.error("TF state file does not exists")
-            exit(1)
-    data = replace_placeholder(data, tf_outputs, target_credentials)
 
     source = data["Source"]
     target = data["Target"]
-    target_client = init_client(target_credentials)
+    target_credentials = assume_aws_role(target["AssumeRole"], "target")
+    source_share_credentials = assume_aws_role(source["Share"]["AssumeRole"], "source")
 
+    tf_outputs = get_outputs(target_credentials, args.tfstate)
+    if tf_outputs is None:
+        LOGGER.error("TF state file does not exists")
+        exit(1)
+
+    source = replace_placeholder(source, tf_outputs, target_credentials)
+    target = replace_placeholder(target, tf_outputs, target_credentials)
+
+    target_client = init_client(target_credentials)
     target_exists = does_target_exists(
         target_client, target["DBIdentifier"], data["ClusterMode"]
     )
