@@ -11,11 +11,15 @@ from src.ssm import get_parameter
 LOGGER = logging.getLogger("root")
 
 
+def schema_dir():
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/schema/"
+
+
 def is_invalid(data):
     if data is None:
         return True
 
-    schema = load_config("schema/config.json")
+    schema = load_config(schema_dir() + "config.json")
     try:
         jsonschema.validate(data, schema)
     except jsonschema.exceptions.ValidationError as err:
@@ -44,21 +48,21 @@ def is_sharing_enabled(data):
     return data["Share"]
 
 
-def fetch_from_tfstate(key, tf_outputs):
+def _fetch_from_tfstate(key, tf_outputs):
     if tf_outputs.get(key) is None:
         LOGGER.error("%s does not exists in TF state" % key)
         return None
     return tf_outputs[key]
 
 
-def fetch_from_env(key):
+def _fetch_from_env(key):
     if os.environ.get(key) is None:
         LOGGER.error("%s environment variable does not exists" % key)
         return None
     return os.environ[key]
 
 
-def fetch_from_ssm(key, assume_role):
+def _fetch_from_ssm(key, assume_role):
     return get_parameter(assume_role, key)
 
 
@@ -69,11 +73,11 @@ def replace_placeholder(value, tf_outputs, assume_role):
         if result is None:
             return value
         elif result.group(1) == "tf":
-            value = fetch_from_tfstate(result.group(2), tf_outputs)
+            value = _fetch_from_tfstate(result.group(2), tf_outputs)
         elif result.group(1) == "ssm":
-            value = fetch_from_ssm(result.group(2), assume_role)
+            value = _fetch_from_ssm(result.group(2), assume_role)
         elif result.group(1) == "env":
-            value = fetch_from_env(result.group(2))
+            value = _fetch_from_env(result.group(2))
         return value
     elif type(value) == list:
         return [replace_placeholder(i, tf_outputs, assume_role) for i in value]

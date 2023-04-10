@@ -8,16 +8,16 @@ ASSUME_ROLE_DISABLED = None
 
 class TestConfig:
     def test_is_config_exists_when_file_present(self):
-        assert is_config_exists("schema/config.json") == True
+        assert is_config_exists(schema_dir() + "config.json") is True
 
     def test_is_config_exists_when_file_not_present(self):
-        assert is_config_exists("schema/conf.json") == False
+        assert is_config_exists(schema_dir() + "conf.json") is False
 
     def test_load_config_exists_when_file_present(self):
-        assert load_config("schema/config.json") != None
+        assert load_config(schema_dir() + "config.json") is not None
 
     def test_load_config_exists_when_file_not_present(self):
-        assert load_config("schema/conf.json") == None
+        assert load_config(schema_dir() + "conf.json") is None
 
     @pytest.fixture
     def data(self):
@@ -56,52 +56,33 @@ class TestConfig:
         }
 
     def test_is_valid(self, data):
-        assert is_invalid(data) == False
+        assert is_invalid(data) is False
 
     def test_is_valid_missing_required_property_cluster_mode(self, data):
         invalid_data = data.copy()
         del invalid_data["Target"]["Tags"]
-        assert is_invalid(invalid_data) != None
+        assert is_invalid(invalid_data) is not None
 
     def test_is_valid_missing_required_property_tags(self, data):
         invalid_data = data.copy().pop("ClusterMode")
-        assert is_invalid(invalid_data) != None
+        assert is_invalid(invalid_data) is not None
 
     def test_is_valid_missing_optional_property_share(self, data):
         valid_data = data.copy()
         del valid_data["Source"]["Share"]
-        assert is_invalid(data) == False
+        assert is_invalid(data) is False
 
     def test_is_sharing_enabled_with_sharing_property(self, data):
-        assert is_sharing_enabled(data["Source"]) != None
+        assert is_sharing_enabled(data["Source"]) is not None
 
     def test_is_sharing_enabled_without_sharing_property(self, data):
         valid_data = data.copy()
         del valid_data["Source"]["Share"]
-        assert is_sharing_enabled(valid_data) == False
-
-    def test_fetch_from_tfstate_key_exists(self, tfdate):
-        key = "db_global_security_group"
-        assert fetch_from_tfstate(key, tfdate) == tfdate.get(key)
-
-    def test_fetch_from_tfstate_key_doesnt_exists(self, tfdate):
-        key = "security_group"
-        assert fetch_from_tfstate(key, tfdate) == None
-
-    def test_fetch_from_env_key_exists(self, tfdate):
-        key = "DB_USERNAME"
-        value = "random123"
-        os.environ[key] = value
-        assert fetch_from_env(key) == value
-
-    def test_fetch_from_env_key_doesnt_exists(self, tfdate):
-        key = "MASTER_DB_USERNAME"
-        value = "random123"
-        assert fetch_from_env(key) == None
+        assert is_sharing_enabled(valid_data) is False
 
     def test_replace_placeholder_env_not_present(self, data, tfdate):
         parsed_data = replace_placeholder(data, tfdate, ASSUME_ROLE_DISABLED)
-        assert parsed_data["Target"]["DBSubnetGroupName"] == None
+        assert parsed_data["Target"]["DBSubnetGroupName"] is None
 
     def test_replace_placeholder_env_present(self, data, tfdate):
         key = "PRIVATE_SUBNET"
@@ -112,7 +93,7 @@ class TestConfig:
 
     def test_replace_placeholder_tfdata_not_present(self, data, tfdate):
         parsed_data = replace_placeholder(data, tfdate, ASSUME_ROLE_DISABLED)
-        assert parsed_data["Target"]["DBInstanceClass"] == None
+        assert parsed_data["Target"]["DBInstanceClass"] is None
 
     def test_replace_placeholder_tfdata_present(self, data, tfdate):
         parsed_data = replace_placeholder(data, tfdate, ASSUME_ROLE_DISABLED)

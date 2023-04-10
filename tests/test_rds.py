@@ -39,49 +39,49 @@ class TestRDS:
     def test_check_target(self, conn):
         db_id = "master-db"
         self.create_db(conn, db_id)
-        assert does_target_exists(conn, db_id, CLUSTER_MODE_DISABLED) == True
+        assert does_target_exists(conn, db_id, CLUSTER_MODE_DISABLED) is True
 
     @mock_rds
     def test_check_target_which_doesnt_exists(self, conn):
         db_id = "master-db"
-        assert does_target_exists(conn, db_id, CLUSTER_MODE_DISABLED) == False
+        assert does_target_exists(conn, db_id, CLUSTER_MODE_DISABLED) is False
 
     @mock_rds
     def test_get_latest_snapshot(self, conn):
         db_id = "master-db"
         snapshot_id = "backup-1"
         snapshot = self.create_db_snapshots(conn, db_id, snapshot_id)
-        assert get_latest_snapshot(conn, db_id, CLUSTER_MODE_DISABLED) != None
+        assert get_latest_snapshot(conn, db_id, CLUSTER_MODE_DISABLED) is not None
 
     @mock_rds
     def test_get_latest_snapshot_which_doesnt_exists(self, conn):
         db_id = "master-db"
         self.create_db(conn, db_id)
-        assert get_latest_snapshot(conn, db_id, CLUSTER_MODE_DISABLED) == None
+        assert get_latest_snapshot(conn, db_id, CLUSTER_MODE_DISABLED) is None
 
     @mock_rds
     def test_delete_rds(self, conn):
         db_id = "master-db"
         self.create_db(conn, db_id)
-        assert delete_rds(conn, db_id, CLUSTER_MODE_DISABLED) == True
+        assert delete_rds(conn, db_id, CLUSTER_MODE_DISABLED) is True
 
     @mock_rds
     def test_delete_rds_which_doesnt_exists(self, conn):
         db_id = "master-db"
-        assert delete_rds(conn, db_id, CLUSTER_MODE_DISABLED) == False
+        assert delete_rds(conn, db_id, CLUSTER_MODE_DISABLED) is False
 
     @mock_rds
     def test_update_identifier(self, conn):
         db_id = "master-db"
         new_db_id = "latest-master-db"
         self.create_db(conn, db_id)
-        assert update_identifier(conn, db_id, new_db_id, CLUSTER_MODE_DISABLED) == True
+        assert update_identifier(conn, db_id, new_db_id, CLUSTER_MODE_DISABLED) is True
 
     @mock_rds
     def test_update_identifier_which_doesnt_exists(self, conn):
         db_id = "master-db"
         new_db_id = "latest-master-db"
-        assert update_identifier(conn, db_id, new_db_id, CLUSTER_MODE_DISABLED) == False
+        assert update_identifier(conn, db_id, new_db_id, CLUSTER_MODE_DISABLED) is False
 
     @mock_rds
     def test_copy_snapshot(self, conn):

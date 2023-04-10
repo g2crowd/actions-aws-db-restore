@@ -26,4 +26,4 @@ class TestSSM:
     @mock_ssm
     def test_get_parameter_which_doesnt_exists(self):
         param_name = "/infra/test/db/username"
-        assert get_parameter(ASSUME_ROLE_DISABLED, param_name) == None
+        assert get_parameter(ASSUME_ROLE_DISABLED, param_name) is None
