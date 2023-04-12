@@ -15,20 +15,20 @@ def schema_dir():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/schema/"
 
 
-def is_invalid(data):
+def is_valid(data):
     if data is None:
-        return True
+        return False, "Config is empty"
 
     schema = load_config(schema_dir() + "config.json")
     try:
         jsonschema.validate(data, schema)
     except jsonschema.exceptions.ValidationError as err:
-        return err
-    return False
+        return False, err
+    return True, None
 
 
 def load_config(filename):
-    if not is_config_exists(filename):
+    if not does_config_exist(filename):
         LOGGER.error("Provided configuration file is not available")
         return None
 
@@ -38,28 +38,31 @@ def load_config(filename):
     return data
 
 
-def is_config_exists(filename):
+def does_config_exist(filename):
     return os.path.isfile(filename)
 
 
 def is_sharing_enabled(data):
-    if data.get("Share") is None:
+    result = data.get("Share")
+    if result is None:
         return False
-    return data["Share"]
+    return result
 
 
 def _fetch_from_tfstate(key, tf_outputs):
-    if tf_outputs.get(key) is None:
+    result = tf_outputs.get(key)
+    if result is None:
         LOGGER.error("%s does not exists in TF state" % key)
         return None
-    return tf_outputs[key]
+    return result
 
 
 def _fetch_from_env(key):
-    if os.environ.get(key) is None:
+    result = os.environ.get(key)
+    if result is None:
         LOGGER.error("%s environment variable does not exists" % key)
         return None
-    return os.environ[key]
+    return result
 
 
 def _fetch_from_ssm(key, assume_role):

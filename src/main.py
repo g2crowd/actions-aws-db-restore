@@ -1,6 +1,6 @@
 import argparse
 
-from src.config import is_invalid, is_sharing_enabled, load_config, replace_placeholder
+from src.config import is_sharing_enabled, is_valid, load_config, replace_placeholder
 from src.rds import (
     copy_snapshot,
     does_target_exists,
@@ -21,9 +21,9 @@ def main(command_line=None):
     args = parser.parse_args(command_line)
 
     data = load_config(args.config)
-    status = is_invalid(data)
-    if status:
-        LOGGER.error(status)
+    status, err = is_valid(data)
+    if not status:
+        LOGGER.error(err)
         exit(1)
 
     source = data["Source"]

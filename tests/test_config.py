@@ -7,11 +7,11 @@ ASSUME_ROLE_DISABLED = None
 
 
 class TestConfig:
-    def test_is_config_exists_when_file_present(self):
-        assert is_config_exists(schema_dir() + "config.json") is True
+    def test_does_config_exist_when_file_present(self):
+        assert does_config_exist(schema_dir() + "config.json") is True
 
-    def test_is_config_exists_when_file_not_present(self):
-        assert is_config_exists(schema_dir() + "conf.json") is False
+    def test_does_config_exist_when_file_not_present(self):
+        assert does_config_exist(schema_dir() + "conf.json") is False
 
     def test_load_config_exists_when_file_present(self):
         assert load_config(schema_dir() + "config.json") is not None
@@ -56,21 +56,25 @@ class TestConfig:
         }
 
     def test_is_valid(self, data):
-        assert is_invalid(data) is False
+        status, _ = is_valid(data)
+        assert status is True
 
     def test_is_valid_missing_required_property_cluster_mode(self, data):
         invalid_data = data.copy()
         del invalid_data["Target"]["Tags"]
-        assert is_invalid(invalid_data) is not None
+        status, _ = is_valid(invalid_data)
+        assert status is False
 
     def test_is_valid_missing_required_property_tags(self, data):
         invalid_data = data.copy().pop("ClusterMode")
-        assert is_invalid(invalid_data) is not None
+        status, _ = is_valid(invalid_data)
+        assert status is False
 
     def test_is_valid_missing_optional_property_share(self, data):
         valid_data = data.copy()
         del valid_data["Source"]["Share"]
-        assert is_invalid(data) is False
+        status, _ = is_valid(valid_data)
+        assert status is True
 
     def test_is_sharing_enabled_with_sharing_property(self, data):
         assert is_sharing_enabled(data["Source"]) is not None
