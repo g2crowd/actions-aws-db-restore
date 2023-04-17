@@ -1,0 +1,24 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+boto3 = "==1.26.9"
+botocore = "==1.29.9"
+jmespath = "==1.0.1"
+python-dateutil = "==2.8.2"
+s3transfer = "==0.6.0"
+six = "==1.16.0"
+urllib3 = "==1.26.12"
+jsonschema = "==4.17.3"
+
+[dev-packages]
+pytest = "*"
+moto = "*"
+
+[requires]
+python_version = "3.9"
+
+[scripts]
+test = "python -m pytest -s ."

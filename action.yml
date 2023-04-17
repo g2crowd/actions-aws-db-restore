@@ -1,0 +1,25 @@
+name: Restore RDS snapshot GitHub Action
+description: This is a github actions to restore RDS snapshot
+
+author: Saurabh Jambhule
+
+branding:
+  color: green
+  icon: airplay
+
+inputs:
+  config:
+    description: The configuration file path
+  tfstate:
+    description: The configuTF state file path
+
+outputs:
+  success:
+    description: Whether action was successful or not
+
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+    - ${{ inputs.config }}
+    - ${{ inputs.tfstate }}
