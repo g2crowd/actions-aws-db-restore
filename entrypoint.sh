@@ -1,6 +1,6 @@
-#!/bin/sh -l
-
-python /src/main.py -c "$1" --t "$2"
+#!/bin/bash -l
+pipenv install
+PYTHONPATH='/' pipenv run main -c "$1" --t "$2"
 BUILD_RESULT=$?
 if [ $BUILD_RESULT -eq 0 ]; then
   echo ::set-output name=success::true

@@ -5,11 +5,9 @@ LABEL "com.github.actions.description"="This is a github actions to restore RDS 
 LABEL "com.github.actions.icon"="airplay"
 LABEL "com.github.actions.color"="green"
 
-WORKDIR /app
-
 COPY . .
 
-RUN pip install --no-cache-dir -r requirements.txt \
+RUN pip install pipenv \
   && chmod +x entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
