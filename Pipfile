@@ -12,13 +12,17 @@ s3transfer = "==0.6.0"
 six = "==1.16.0"
 urllib3 = "==1.26.12"
 jsonschema = "==4.17.3"
+setuptools = "*"
 
 [dev-packages]
 pytest = "*"
 moto = "*"
+pipenv-setup = "*"
+vistir = "==0.6.1"
 
 [requires]
 python_version = "3.9"
 
 [scripts]
 test = "python -m pytest -s ."
+main = "python /src/main.py"
