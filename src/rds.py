@@ -135,6 +135,8 @@ def copy_snapshot(client, source, target, kms_key, cluster_mode):
                 "DBClusterSnapshotIdentifier"
             ]
             target_snapshot_arn = response["DBClusterSnapshot"]["DBClusterSnapshotArn"]
+            target_engine = response["DBClusterSnapshot"]["Engine"]
+            target_engine_version = response["DBClusterSnapshot"]["EngineVersion"]
             waiter = client.get_waiter("db_cluster_snapshot_available")
             waiter.wait(DBClusterSnapshotIdentifier=target_snapshot_arn, WaiterConfig=get_waiter_config())
 
@@ -146,6 +148,8 @@ def copy_snapshot(client, source, target, kms_key, cluster_mode):
             )
             target_snapshot = response["DBSnapshot"]["DBSnapshotIdentifier"]
             target_snapshot_arn = response["DBSnapshot"]["DBSnapshotArn"]
+            target_engine = response["DBSnapshot"]["Engine"]
+            target_engine_version = response["DBSnapshot"]["EngineVersion"]
             waiter = client.get_waiter("db_snapshot_available")
             waiter.wait(DBSnapshotIdentifier=target_snapshot, WaiterConfig=get_waiter_config())
     except ClientError as err:
@@ -156,7 +160,7 @@ def copy_snapshot(client, source, target, kms_key, cluster_mode):
         )
         return None, None
 
-    return target_snapshot, target_snapshot_arn
+    return target_snapshot, target_snapshot_arn, target_engine, target_engine_version
 
 
 def share_snapshot(client, source, target, kms_key, account, cluster_mode):
@@ -169,7 +173,7 @@ def share_snapshot(client, source, target, kms_key, account, cluster_mode):
     LOGGER.info(
         "Updating KMS key of snapshot {} with {}".format(source_snapshot_arn, kms_key)
     )
-    target_snapshot, target_snapshot_arn = copy_snapshot(
+    target_snapshot, target_snapshot_arn, target_engine, target_engine_version = copy_snapshot(
         client, source_snapshot_arn, target, kms_key, cluster_mode
     )
     if target_snapshot is None:
@@ -189,7 +193,7 @@ def share_snapshot(client, source, target, kms_key, account, cluster_mode):
             ValuesToAdd=[account],
         )
 
-    return target_snapshot, target_snapshot_arn
+    return target_snapshot, target_snapshot_arn, target_engine, target_engine_version
 
 
 def restore_snapshot(client, data, target_exists, cluster_mode):
@@ -202,6 +206,8 @@ def restore_snapshot(client, data, target_exists, cluster_mode):
         client.restore_db_cluster_from_snapshot(
             DBClusterIdentifier=db_identifier,
             SnapshotIdentifier=data["SnapshotArn"],
+            Engine=data["Engine"],
+            EngineVersion=data["EngineVersion"],
             DBClusterInstanceClass=data["DBInstanceClass"],
             DBSubnetGroupName=data["DBSubnetGroupName"],
             VpcSecurityGroupIds=data["VpcSecurityGroupIds"],

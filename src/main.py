@@ -49,7 +49,8 @@ def main(command_line=None):
 
     if is_sharing_enabled(source):
         source_client = init_client(source_share_credentials)
-        target["SnapshotIdentifier"], target["SnapshotArn"] = share_snapshot(
+        target["SnapshotIdentifier"], target["SnapshotArn"], target["Engine"], \
+        target["EngineVersion"] = share_snapshot(
             source_client,
             source["DBIdentifier"],
             target["DBIdentifier"],
@@ -65,7 +66,8 @@ def main(command_line=None):
                 target["SnapshotArn"], source["Share"]["TargetKmsKey"]
             )
         )
-        target["SnapshotIdentifier"], target["SnapshotArn"] = copy_snapshot(
+        target["SnapshotIdentifier"], target["SnapshotArn"], target["Engine"], \
+        target["EngineVersion"] = copy_snapshot(
             target_client,
             target["SnapshotArn"],
             target["SnapshotIdentifier"],
