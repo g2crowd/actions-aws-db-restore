@@ -218,6 +218,15 @@ def restore_snapshot(client, data, target_exists, cluster_mode):
         )
         waiter = client.get_waiter("db_cluster_available")
         waiter.wait(DBClusterIdentifier=db_identifier, WaiterConfig=get_waiter_config())
+        db_instance_identifier = db_identifier + "main"
+        client.create_db_instance(
+            DBClusterIdentifier=db_identifier,
+            DBInstanceIdentifier=db_instance_identifier,
+            Engine=data["Engine"],
+            DBInstanceClass=data["DBInstanceClass"],
+        )
+        waiter = client.get_waiter("db_instance_available")
+        waiter.wait(DBInstanceIdentifier=db_instance_identifier, WaiterConfig=get_waiter_config())
     else:
         client.restore_db_instance_from_db_snapshot(
             DBInstanceIdentifier=db_identifier,
