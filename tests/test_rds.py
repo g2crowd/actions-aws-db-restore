@@ -90,7 +90,12 @@ class TestRDS:
         new_snapshot_id = "latest-backup-1"
         self.create_db(conn, db_id)
         snapshot = self.create_db_snapshots(conn, db_id, snapshot_id)
-        target_snapshot, target_snapshot_arn = copy_snapshot(
+        (
+            target_snapshot,
+            target_snapshot_arn,
+            target_engine,
+            target_engine_version,
+        ) = copy_snapshot(
             conn, snapshot_id, new_snapshot_id, "alias/rds", CLUSTER_MODE_DISABLED
         )
         assert target_snapshot == new_snapshot_id

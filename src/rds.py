@@ -22,10 +22,7 @@ def init_client(assumed_role):
 
 
 def get_waiter_config():
-    return {
-        "Delay": 60,
-        "MaxAttempts": 300
-    }
+    return {"Delay": 60, "MaxAttempts": 300}
 
 
 def does_target_exists(client, db_identifier, cluster_mode):
@@ -79,7 +76,9 @@ def delete_rds(client, db_identifier, cluster_mode):
                 DBClusterIdentifier=db_identifier, SkipFinalSnapshot=True
             )
             waiter = client.get_waiter("db_cluster_deleted")
-            waiter.wait(DBClusterIdentifier=db_identifier, WaiterConfig=get_waiter_config())
+            waiter.wait(
+                DBClusterIdentifier=db_identifier, WaiterConfig=get_waiter_config()
+            )
         else:
             client.delete_db_instance(
                 DBInstanceIdentifier=db_identifier,
@@ -87,7 +86,9 @@ def delete_rds(client, db_identifier, cluster_mode):
                 DeleteAutomatedBackups=True,
             )
             waiter = client.get_waiter("db_instance_deleted")
-            waiter.wait(DBInstanceIdentifier=db_identifier, WaiterConfig=get_waiter_config())
+            waiter.wait(
+                DBInstanceIdentifier=db_identifier, WaiterConfig=get_waiter_config()
+            )
     except ClientError as err:
         LOGGER.error(
             "{}: {}".format(
@@ -135,8 +136,13 @@ def copy_snapshot(client, source, target, kms_key, cluster_mode):
                 "DBClusterSnapshotIdentifier"
             ]
             target_snapshot_arn = response["DBClusterSnapshot"]["DBClusterSnapshotArn"]
+            target_engine = response["DBClusterSnapshot"]["Engine"]
+            target_engine_version = response["DBClusterSnapshot"]["EngineVersion"]
             waiter = client.get_waiter("db_cluster_snapshot_available")
-            waiter.wait(DBClusterSnapshotIdentifier=target_snapshot_arn, WaiterConfig=get_waiter_config())
+            waiter.wait(
+                DBClusterSnapshotIdentifier=target_snapshot_arn,
+                WaiterConfig=get_waiter_config(),
+            )
 
         else:
             response = client.copy_db_snapshot(
@@ -146,8 +152,12 @@ def copy_snapshot(client, source, target, kms_key, cluster_mode):
             )
             target_snapshot = response["DBSnapshot"]["DBSnapshotIdentifier"]
             target_snapshot_arn = response["DBSnapshot"]["DBSnapshotArn"]
+            target_engine = response["DBSnapshot"]["Engine"]
+            target_engine_version = response["DBSnapshot"]["EngineVersion"]
             waiter = client.get_waiter("db_snapshot_available")
-            waiter.wait(DBSnapshotIdentifier=target_snapshot, WaiterConfig=get_waiter_config())
+            waiter.wait(
+                DBSnapshotIdentifier=target_snapshot, WaiterConfig=get_waiter_config()
+            )
     except ClientError as err:
         LOGGER.error(
             "{}: {}".format(
@@ -156,7 +166,7 @@ def copy_snapshot(client, source, target, kms_key, cluster_mode):
         )
         return None, None
 
-    return target_snapshot, target_snapshot_arn
+    return target_snapshot, target_snapshot_arn, target_engine, target_engine_version
 
 
 def share_snapshot(client, source, target, kms_key, account, cluster_mode):
@@ -169,9 +179,12 @@ def share_snapshot(client, source, target, kms_key, account, cluster_mode):
     LOGGER.info(
         "Updating KMS key of snapshot {} with {}".format(source_snapshot_arn, kms_key)
     )
-    target_snapshot, target_snapshot_arn = copy_snapshot(
-        client, source_snapshot_arn, target, kms_key, cluster_mode
-    )
+    (
+        target_snapshot,
+        target_snapshot_arn,
+        target_engine,
+        target_engine_version,
+    ) = copy_snapshot(client, source_snapshot_arn, target, kms_key, cluster_mode)
     if target_snapshot is None:
         return target_snapshot, target_snapshot_arn
 
@@ -189,7 +202,7 @@ def share_snapshot(client, source, target, kms_key, account, cluster_mode):
             ValuesToAdd=[account],
         )
 
-    return target_snapshot, target_snapshot_arn
+    return target_snapshot, target_snapshot_arn, target_engine, target_engine_version
 
 
 def restore_snapshot(client, data, target_exists, cluster_mode):
@@ -202,6 +215,8 @@ def restore_snapshot(client, data, target_exists, cluster_mode):
         client.restore_db_cluster_from_snapshot(
             DBClusterIdentifier=db_identifier,
             SnapshotIdentifier=data["SnapshotArn"],
+            Engine=data["Engine"],
+            EngineVersion=data["EngineVersion"],
             DBClusterInstanceClass=data["DBInstanceClass"],
             DBSubnetGroupName=data["DBSubnetGroupName"],
             VpcSecurityGroupIds=data["VpcSecurityGroupIds"],
@@ -212,6 +227,18 @@ def restore_snapshot(client, data, target_exists, cluster_mode):
         )
         waiter = client.get_waiter("db_cluster_available")
         waiter.wait(DBClusterIdentifier=db_identifier, WaiterConfig=get_waiter_config())
+        db_instance_identifier = db_identifier + "main"
+        client.create_db_instance(
+            DBClusterIdentifier=db_identifier,
+            DBInstanceIdentifier=db_instance_identifier,
+            Engine=data["Engine"],
+            DBInstanceClass=data["DBInstanceClass"],
+        )
+        waiter = client.get_waiter("db_instance_available")
+        waiter.wait(
+            DBInstanceIdentifier=db_instance_identifier,
+            WaiterConfig=get_waiter_config(),
+        )
     else:
         client.restore_db_instance_from_db_snapshot(
             DBInstanceIdentifier=db_identifier,
@@ -225,7 +252,9 @@ def restore_snapshot(client, data, target_exists, cluster_mode):
             DeletionProtection=False,
         )
         waiter = client.get_waiter("db_instance_available")
-        waiter.wait(DBInstanceIdentifier=db_identifier, WaiterConfig=get_waiter_config())
+        waiter.wait(
+            DBInstanceIdentifier=db_identifier, WaiterConfig=get_waiter_config()
+        )
 
     if target_exists:
         delete_rds(client, data["DBIdentifier"], cluster_mode)
