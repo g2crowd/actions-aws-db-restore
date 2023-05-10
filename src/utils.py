@@ -23,5 +23,7 @@ def assume_aws_role(role_arn, role_name):
 
     LOGGER.info(f"Assuming {role_name} AWS role")
     client = boto3.client("sts")
-    response = client.assume_role(RoleArn=role_arn, RoleSessionName="RestoreDBSession")
+    response = client.assume_role(
+        RoleArn=role_arn, RoleSessionName="RestoreDBSession", DurationSeconds=28800
+    )
     return response["Credentials"]
