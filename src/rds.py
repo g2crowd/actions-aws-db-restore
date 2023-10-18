@@ -72,6 +72,21 @@ def delete_rds(client, db_identifier, cluster_mode):
     LOGGER.info("Deleting %s db" % db_identifier)
     try:
         if cluster_mode:
+            LOGGER.info("Deleting db instance")
+            response = client.describe_db_clusters(
+                DBClusterIdentifier=db_identifier
+            )
+            db_instance_identifier = response["DBClusters"][0]["DBClusterMembers"][0]["DBInstanceIdentifier"]
+            client.delete_db_instance(
+                DBInstanceIdentifier=db_instance_identifier,
+                SkipFinalSnapshot=True,
+                DeleteAutomatedBackups=True,
+            )
+            waiter = client.get_waiter("db_instance_deleted")
+            waiter.wait(
+                DBInstanceIdentifier=db_instance_identifier, WaiterConfig=get_waiter_config()
+            )
+            LOGGER.info("Deleting %s db cluster" % db_identifier)
             client.delete_db_cluster(
                 DBClusterIdentifier=db_identifier, SkipFinalSnapshot=True
             )
@@ -209,9 +224,11 @@ def restore_snapshot(client, data, target_exists, cluster_mode):
     db_identifier = data["DBIdentifier"]
     if target_exists:
         db_identifier = data["SnapshotIdentifier"]
+    db_instance_identifier = db_identifier + "main"
 
     LOGGER.info("Creating RDS {} from {}".format(db_identifier, data["SnapshotArn"]))
     if cluster_mode:
+        LOGGER.info("Creating DB cluster")
         client.restore_db_cluster_from_snapshot(
             DBClusterIdentifier=db_identifier,
             SnapshotIdentifier=data["SnapshotArn"],
@@ -227,7 +244,7 @@ def restore_snapshot(client, data, target_exists, cluster_mode):
         )
         waiter = client.get_waiter("db_cluster_available")
         waiter.wait(DBClusterIdentifier=db_identifier, WaiterConfig=get_waiter_config())
-        db_instance_identifier = db_identifier + "main"
+        LOGGER.info("Creating DB instance")
         client.create_db_instance(
             DBClusterIdentifier=db_identifier,
             DBInstanceIdentifier=db_instance_identifier,
