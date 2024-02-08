@@ -1,6 +1,6 @@
 import argparse
 
-from src.config import is_sharing_enabled, is_valid, load_config, replace_placeholder, _fetch_from_env
+from src.config import is_sharing_enabled, is_valid, load_config, replace_placeholder
 from src.rds import (
     copy_snapshot,
     does_target_exists,
