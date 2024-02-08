@@ -70,18 +70,6 @@ def main(command_line=None):
                 target["SnapshotArn"], source["Share"]["TargetKmsKey"]
             )
         )
-        (
-            target["SnapshotIdentifier"],
-            target["SnapshotArn"],
-            target["Engine"],
-            target["EngineVersion"],
-        ) = copy_snapshot(
-            target_client,
-            target["SnapshotArn"],
-            target["SnapshotIdentifier"],
-            source["Share"]["TargetKmsKey"],
-            data["ClusterMode"],
-        )
 
     restore_snapshot(target_client, target, target_exists, data["ClusterMode"])
 
