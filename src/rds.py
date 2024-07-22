@@ -244,6 +244,16 @@ def restore_snapshot(client, data, target_exists, cluster_mode):
         )
         waiter = client.get_waiter("db_cluster_available")
         waiter.wait(DBClusterIdentifier=db_identifier, WaiterConfig=get_waiter_config())
+        if data["DBInstanceClass"] == "db.serverless":
+            LOGGER.info("Updating cluster configuration for serverless")
+            client.modify_db_cluster(
+                DBClusterIdentifier=db_identifier,
+                ServerlessV2ScalingConfiguration={
+                    "MaxCapacity": 5,
+                    "MinCapacity": 1,
+                },
+                ApplyImmediately=True,
+            )
         LOGGER.info("Creating DB instance")
         client.create_db_instance(
             DBClusterIdentifier=db_identifier,
